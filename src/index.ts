@@ -12,19 +12,34 @@ dotenv.config();
 import { typeDefs, resolvers } from "./schema/index.js";
 import sequelizeConnection from "./db/index.js";
 
+// Required logic for integrating with Express
 const app = express();
+/*
+  Our httpServer handles incoming requests to our Express app.
+  Below, we tell Apollo Server to "drain" this httpServer,
+  enabling our servers to shut down gracefully.
+*/
 const httpServer = http.createServer(app);
 
+/*
+  Same ApolloServer initialization as before, plus the drain plugin
+  for our httpServer.
+*/
 const server = new ApolloServer({
   typeDefs,
   resolvers,
   plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
 
+//Ensure we eait for database connection
 await sequelizeConnection.sync();
-
+// Ensure we wait for our server to start
 await server.start();
 
+/*  
+  Set up our Express middleware to handle body parsing,
+  and our expressMiddleware function.
+*/
 app.use(
   "/graphql",
   bodyParser.json(),
@@ -34,6 +49,7 @@ app.use(
   })
 );
 
+// Modified server startup
 await new Promise<void>((resolve) =>
   httpServer.listen({ port: process.env.PORT || 4000 }, resolve)
 );
